@@ -114,9 +114,48 @@ if (typeof cast !== "undefined") {
     smalls[1].classList.toggle('off', idx >= items.length - 1);
   }
 
+  /** رقم السورة من الرابط - مسار احتياطي وحيد لو غاب trackNumber (نسخة مُرسِل قديمة) */
+  function surahFromUrl(url) {
+    const m = String(url || "").match(/(\d{3})\.mp3/);
+    return m ? Number(m[1]) : null;
+  }
+
+  /** قائمة الروايات - المسار الاحتياطي حين يغيب discNumber لأن كاش الهاتف كان باردًا */
+  async function readIdForUrl(url) {
+    const res = await fetch("https://www.mp3quran.net/api/v3/ayat_timing/reads");
+    const reads = await res.json();
+    const folder = String(url || "").replace(/\/\d{3}\.mp3.*$/, "");
+    const hit = reads.find(r => String(r.folder_url || "").replace(/\/$/, "") === folder);
+    return hit ? Number(hit.id) : null;
+  }
+
+  async function loadTimings(media) {
+    timings = []; totalAyahs = 0;
+    try {
+      const md = media.metadata || {};
+      const url = media.contentId || media.contentUrl;
+      const surah = Number(md.trackNumber) || surahFromUrl(url);
+      const read  = Number(md.discNumber)  || await readIdForUrl(url);
+      if (!surah || !read) return;
+      const res = await fetch(
+        "https://www.mp3quran.net/api/v3/ayat_timing?surah=" + surah + "&read=" + read);
+      const parsed = QTV.parseTimings(await res.json());
+      timings = parsed;
+      totalAyahs = parsed.length ? parsed[parsed.length - 1].ayah : 0;
+    } catch (e) {
+      // 🔑 لا يفشل البث بسبب صف زينة - renderProgress يخفيه لأن timings بقيت فارغة
+      console.warn("ayah timings unavailable", e);
+    }
+  }
+
   playerManager.addEventListener(cast.framework.events.EventType.MEDIA_STATUS, e => {
     const media = e.mediaStatus && e.mediaStatus.media;
-    if (media) applyMetadata(media);
+    if (media) {
+      applyMetadata(media);
+      const id = media.contentId || media.contentUrl;
+      // 🔑 نجلب مرة واحدة لكل عنصر - MEDIA_STATUS يتكرر كثيرًا أثناء التشغيل الطبيعي
+      if (id !== loadedContentId) { loadedContentId = id; loadTimings(media); }
+    }
     renderTransport();
   });
 
