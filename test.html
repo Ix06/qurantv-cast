@@ -28,6 +28,13 @@ eq(Q.strings("ar").ayah(136), "آية 136", "arabic ayah label");
 eq(Q.strings("en").ayah(136), "Ayah 136", "english ayah label");
 eq(Q.strings("zz").ayah(1), "Ayah 1", "unknown language falls back to english");
 
+eq(Q.strings("ar").kareem, "القرآن الكريم", "arabic kareem label");
+eq(Q.strings("en").kareem, "The Holy Quran", "english kareem label");
+eq(Q.strings("ar").am, "ص", "arabic am label");
+eq(Q.strings("ar").pm, "م", "arabic pm label");
+eq(Q.strings("en").am, "AM", "english am label");
+eq(Q.strings("en").pm, "PM", "english pm label");
+
 const T = [
   {ayah:1, startMs:0,    endMs:4200},
   {ayah:2, startMs:4200, endMs:9100},
@@ -39,6 +46,16 @@ eq(Q.ayahAt(T, 4200),  2, "exactly on the boundary");
 eq(Q.ayahAt(T, 14999), 3, "last ayah");
 eq(Q.ayahAt(T, 99999), 3, "past the end clamps to the last ayah");
 eq(Q.ayahAt([], 1000), null, "no timings yields null");
+
+// basmala (ayah:0) already dropped by parseTimings, so the first surviving
+// entry starts after zero - a position before it must still report ayah 1,
+// matching the phone's currentAyahIndex=0 default (PhoneHomeScreen.kt idx >= 0 guard)
+const T2 = [
+  {ayah:1, startMs:3000, endMs:7000},
+  {ayah:2, startMs:7000, endMs:12000}
+];
+eq(Q.ayahAt(T2, 0),    1, "before the first ayah's start reports the first ayah, not null");
+eq(Q.ayahAt(T2, 2999), 1, "just before the first ayah's start still reports the first ayah");
 
 eq(Q.parseTimings([
   {ayah:0, start_time:0,    end_time:3000},
