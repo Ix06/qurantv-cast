@@ -1,0 +1,50 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>QTV receiver tests</title>
+<pre id="out"></pre>
+<script src="receiver.js"></script>
+<script>
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+function eq(actual, expected, name) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  const ok = a === e;
+  ok ? pass++ : fail++;
+  out.textContent += (ok ? 'PASS  ' : 'FAIL  ') + name +
+    (ok ? '\n' : '\n        expected ' + e + '\n        actual   ' + a + '\n');
+}
+const Q = window.QTV;
+
+eq(Q.shapeDigits("52:33", "ar"), "٥٢:٣٣", "arabic-indic digits");
+eq(Q.shapeDigits("52:33", "en"), "52:33", "latin digits untouched");
+eq(Q.shapeDigits("-82:01", "ar"), "-٨٢:٠١", "minus sign survives shaping");
+
+eq(Q.formatDuration(0), "0:00", "zero");
+eq(Q.formatDuration(75), "1:15", "under an hour");
+eq(Q.formatDuration(3153), "52:33", "minutes past sixty stay minutes");
+eq(Q.formatDuration(4921), "82:01", "no hour rollover");
+
+eq(Q.strings("ar").ayah(136), "آية 136", "arabic ayah label");
+eq(Q.strings("en").ayah(136), "Ayah 136", "english ayah label");
+eq(Q.strings("zz").ayah(1), "Ayah 1", "unknown language falls back to english");
+
+const T = [
+  {ayah:1, startMs:0,    endMs:4200},
+  {ayah:2, startMs:4200, endMs:9100},
+  {ayah:3, startMs:9100, endMs:15000}
+];
+eq(Q.ayahAt(T, 0),     1, "first ayah at zero");
+eq(Q.ayahAt(T, 4199),  1, "just before the boundary");
+eq(Q.ayahAt(T, 4200),  2, "exactly on the boundary");
+eq(Q.ayahAt(T, 14999), 3, "last ayah");
+eq(Q.ayahAt(T, 99999), 3, "past the end clamps to the last ayah");
+eq(Q.ayahAt([], 1000), null, "no timings yields null");
+
+eq(Q.parseTimings([
+  {ayah:0, start_time:0,    end_time:3000},
+  {ayah:1, start_time:3000, end_time:7000}
+]), [{ayah:1, startMs:3000, endMs:7000}], "basmala entry is dropped");
+
+out.textContent += '\n' + pass + ' passed, ' + fail + ' failed\n';
+document.title = fail ? 'FAIL (' + fail + ')' : 'PASS';
+</script>
