@@ -1,0 +1,69 @@
+  :root{
+    --white:#FFFFFF; --surah:#FDFDFD; --mint:#C8E7C9;
+    --track:#41555E; --bg-top:#172C39; --bg-bottom:#243E4A;
+    --dim:rgba(255,255,255,.62); --ghost:rgba(255,255,255,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Kufi Arabic",system-ui,sans-serif; color:var(--white);
+    /* 🔑 السطر الوحيد اللي يتبدّل لصورة خلفية ثابتة لاحقًا */
+    background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-bottom) 100%);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  .top{display:flex; justify-content:space-between; align-items:flex-start; padding:4.2vh 4vw 0}
+  .brand .kareem{font-size:3.4vh; font-weight:700; line-height:1.15}
+  .brand .reciter{font-size:2.1vh; color:var(--dim); margin-top:.4vh}
+  .clock{text-align:right; line-height:1.1}
+  .clock .time{font-size:4.4vh; font-weight:700; unicode-bidi:isolate}
+  .clock .time small{font-size:2.2vh; font-weight:500; margin-inline-start:.5vw}
+  .clock .date{font-size:2vh; color:var(--dim); margin-top:.5vh; unicode-bidi:isolate}
+
+  /* الوسط يبقى فارغًا - هو مكان صورة الخلفية لاحقًا */
+  .stage{flex:1}
+  /* اسم السورة: سطر مستقل فوق المشغّل مباشرة، محاذى لليمين، بنفس خط "القرآن الكريم" */
+  .surah{
+    font-family:"Noto Kufi Arabic",system-ui,sans-serif; font-weight:700;
+    font-size:5vh; line-height:1.2; color:var(--surah);
+    text-align:right; padding:0 4vw; margin-bottom:2.4vh;
+    text-shadow:0 .3vh 2.5vh rgba(0,0,0,.5);
+  }
+
+  /* ===== الأسفل: مطابق لترتيب مشغّل التلفزيون ===== */
+  .bottom{padding:0 4vw 4.5vh}
+  /* الصف الأول: الدائرة الكبيرة يسارًا، والشريطان يمينها - الدائرة بمنتصفهما تمامًا */
+  .main-row{display:flex; align-items:center; gap:2.2vw}
+
+  .big{
+    flex:0 0 auto; width:9.4vh; height:9.4vh; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#EDEDED;
+    /* الحلقة البيضاء حول القرص - مثل المشغّل */
+    box-shadow:0 0 0 .45vh #16242c, 0 0 0 .95vh rgba(255,255,255,.95);
+  }
+  .big svg{width:3.6vh; height:3.6vh; fill:#16242c}
+
+  .bars{flex:1; display:flex; flex-direction:column; gap:2.9vh}
+  .row{display:flex; align-items:center; gap:1vw}
+  .num{
+    font-variant-numeric:tabular-nums; font-size:2.2vh; color:var(--dim);
+    white-space:nowrap; unicode-bidi:isolate;
+  }
+  .num.l{text-align:right; min-width:6.5vw}
+  .num.r{text-align:left;  min-width:6.5vw}
+  .track{position:relative; flex:1; height:.42vh; border-radius:999px; background:var(--track)}
+  /* 🔑 يمتلئ من اليسار لليمين دائمًا */
+  .fill{position:absolute; top:0; bottom:0; left:0; border-radius:999px; background:var(--white)}
+  .knob{position:absolute; top:50%; left:100%; transform:translate(-50%,-50%);
+        width:.95vh; height:.95vh; border-radius:50%; background:var(--white)}
+
+  /* الصف الثاني: الأزرار الصغيرة أسفل الدائرة */
+  .small-row{display:flex; gap:1.1vw; margin-top:2.6vh; padding-inline-start:.6vw}
+  .small{
+    width:5vh; height:5vh; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--ghost);
+  }
+  .small svg{width:2.2vh; height:2.2vh; fill:var(--white)}
+  .small.off svg{fill:rgba(255,255,255,.3)}
