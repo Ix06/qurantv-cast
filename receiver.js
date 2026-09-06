@@ -203,7 +203,14 @@ if (typeof cast !== "undefined") {
   // فهذا هو المدخل الفعلي الوحيد. مرحلة الالتقاط (capture) لنسبق معالج الـSDK.
   // 🔑 QUEUE_PREV يبقى معطّلًا فعليًا عند أول عنصر: المرسِل يبني القائمة من السورة الحالية
   // للأمام فقط (أُكِّد حيًّا: ١١٢ عنصر تبدأ بآل عمران عند تشغيلها)، فما قبلها غير موجود أصلًا
-  function queueJump(type) {
+  function queueJump(type, btnIndex) {
+    // 🔑 وميض قصير على الزر المقابل: الأزرار مؤشرات لا تُلمس بالتلفزيون، فبدون ردّ بصري
+    // لا يربط المستخدم ضغطة الريموت بالزر الذي يمثّلها ويظنّ أن "الأزرار لا تعمل" - وهو بالضبط
+    // ما أبلغ عنه بعد أول بث ناجح
+    try {
+      const b = document.querySelectorAll('.small')[btnIndex];
+      if (b) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 220); }
+    } catch (e) { }
     try {
       playerManager.sendLocalMediaRequest({ type: type, requestId: 0 });
     } catch (e) {
@@ -213,13 +220,13 @@ if (typeof cast !== "undefined") {
 
   window.addEventListener("keydown", e => {
     const M = cast.framework.messages.MessageType;
-    let type = null;
-    if (e.key === "ArrowDown" || e.key === "MediaTrackNext") type = M.QUEUE_NEXT;
-    else if (e.key === "ArrowUp" || e.key === "MediaTrackPrevious") type = M.QUEUE_PREV;
+    let type = null, btn = 0;
+    if (e.key === "ArrowDown" || e.key === "MediaTrackNext") { type = M.QUEUE_NEXT; btn = 1; }
+    else if (e.key === "ArrowUp" || e.key === "MediaTrackPrevious") { type = M.QUEUE_PREV; btn = 0; }
     if (!type) return;
     e.preventDefault();
     e.stopPropagation();
-    queueJump(type);
+    queueJump(type, btn);
   }, true);
 
   ctx.start();

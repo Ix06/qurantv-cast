@@ -26,6 +26,10 @@
   /* واجهتنا كلها فوق الطبقة المعتمة */
   .top,.stage,.surah,.bottom{position:relative; z-index:2}
 
+  /* وميض ضغطة الريموت على الزر الذي يمثّلها */
+  .small.hit{background:var(--mint); color:var(--bg-top); transform:scale(1.12)}
+  .small{transition:background .15s ease, transform .15s ease}
+
   .top{display:flex; justify-content:space-between; align-items:flex-start; padding:4.2vh 4vw 0}
   .brand .kareem{font-size:3.4vh; font-weight:700; line-height:1.15}
   .brand .reciter{font-size:2.1vh; color:var(--dim); margin-top:.4vh}
