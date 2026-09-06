@@ -8,6 +8,16 @@
 </head>
 <body>
 
+  <!-- 🔑🔑🔑 عنصر إلزامي في CAF Web Receiver v3: PlayerManager يرتبط به، وبدونه يرمي
+       ctx.start() استثناءً (TypeError: reading 'g') فلا يبلّغ المستقبلُ المرسِلَ أنه جاهز،
+       فينتظر المرسِل ٦٠ ثانية ثم يفشل بـ"Session start failed. Error code 2473".
+       أُثبِت فعليًا على الشيلد ٢٠٢٦-٠٩-٠٦: الصفحة حمّلت ووصلت APP_STATE_STARTED والساعة
+       تتحدّث (renderClock قبله بأسطر) لكن ctx.start() في آخر سطر لم ينجح.
+       نُبقيه بالحجم الكامل وظاهرًا (لا display:none) حتى لا نكسر أي قياس داخلي للـSDK،
+       ونغطّيه بطبقة .veil معتمة تحمل نفس خلفية الصفحة، وواجهتنا فوقها -->
+  <cast-media-player></cast-media-player>
+  <div class="veil"></div>
+
   <div class="top">
     <div class="brand">
       <div class="kareem" id="kareem">القرآن الكريم</div>
