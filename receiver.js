@@ -116,7 +116,10 @@ if (typeof cast !== "undefined") {
 
   /** رقم السورة من الرابط - مسار احتياطي وحيد لو غاب trackNumber (نسخة مُرسِل قديمة) */
   function surahFromUrl(url) {
-    const m = String(url || "").match(/(\d{3})\.mp3/);
+    // 🔑 مثبَّت بـ "/" قبل الأرقام ونهاية المسار بعدها - نمط غير مثبَّت كـ /(\d{3})\.mp3/
+    // قد يلتقط أول ثلاثة أرقام قبل ".mp3" في أي مكان بالرابط، بما فيها اسم مضيف
+    // كـ serverNNN.mp3quran.net لو بلغ رقم الخادم ثلاثة أرقام
+    const m = String(url || "").match(/\/(\d{3})\.mp3.*$/);
     return m ? Number(m[1]) : null;
   }
 
@@ -130,16 +133,25 @@ if (typeof cast !== "undefined") {
   }
 
   async function loadTimings(media) {
+    // 🔑 نلتقط هوية العنصر المستهدف الآن - إن تقدّمت القائمة أثناء انتظار fallback
+    // الشبكة أدناه فسيتغيّر loadedContentId قبل اكتمالنا، ونتحقق منه قبل الكتابة أدناه
+    const targetId = media.contentId || media.contentUrl;
     timings = []; totalAyahs = 0;
     try {
       const md = media.metadata || {};
       const url = media.contentId || media.contentUrl;
+      // 🔑 Number(x) || fallback يُعامل صفرًا حقيقيًا كغائب - غير قابل للاستغلال هنا لأن
+      // أرقام السور ومعرّفات الروايات في mp3quran لا تكون صفرًا أبدًا؛ افتراض مقصود ومُوزَن
       const surah = Number(md.trackNumber) || surahFromUrl(url);
-      const read  = Number(md.discNumber)  || await readIdForUrl(url);
-      if (!surah || !read) return;
+      if (!surah) return; // 🔑 لا داعٍ لجلب قائمة الروايات كاملة إن لم نحدد السورة أصلًا
+      const read = Number(md.discNumber) || await readIdForUrl(url);
+      if (!read) return;
       const res = await fetch(
         "https://www.mp3quran.net/api/v3/ayat_timing?surah=" + surah + "&read=" + read);
       const parsed = QTV.parseTimings(await res.json());
+      // 🔑 رد متأخر لسورة لم تعد قيد التشغيل يُسقَط لا يُعتمَد - القائمة قد تقدّمت
+      // لعنصر آخر أثناء انتظار الجلب أعلاه، فلا يجوز أن يكتب فوق توقيتاته
+      if (loadedContentId !== targetId) return;
       timings = parsed;
       totalAyahs = parsed.length ? parsed[parsed.length - 1].ayah : 0;
     } catch (e) {
