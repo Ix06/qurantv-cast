@@ -120,9 +120,13 @@ if (typeof cast !== "undefined") {
       state === cast.framework.messages.PlayerState.BUFFERING;
     el('playIcon').innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
 
-    const q = playerManager.getQueueManager();
-    const items = q ? q.getItems() || [] : [];
-    const idx = q ? q.getCurrentItemIndex() : 0;
+    // 🔑 داخل try: getQueueManager قد ترمي أو ترجع null بحالات انتقالية (وهي بالضبط
+    // ما كسر البث حين نُوديت قبل start) - أزرار التنقّل زينة، لا يجوز أن تُسقط الصفحة
+    let items = [], idx = 0;
+    try {
+      const q = playerManager.getQueueManager();
+      if (q) { items = q.getItems() || []; idx = q.getCurrentItemIndex() || 0; }
+    } catch (e) { /* قائمة غير جاهزة بعد - نبقي الأزرار معطّلة */ }
     const smalls = document.querySelectorAll('.small');
     smalls[0].classList.toggle('off', idx <= 0);
     smalls[1].classList.toggle('off', idx >= items.length - 1);
@@ -185,9 +189,17 @@ if (typeof cast !== "undefined") {
     renderTransport();
   });
 
+  // 🔑🔑🔑 ctx.start() أولًا قبل أي استدعاء لـplayerManager. كان يأتي بعد
+  // renderTransport() فيفشل البث كليًا: renderTransport تستدعي getQueueManager() وهذه ترمي
+  // استثناءً داخل الـSDK قبل بدء السياق، فلا يُنفَّذ ctx.start() إطلاقًا، فلا يبلّغ المستقبلُ
+  // المرسِلَ أنه جاهز، فينتظر المرسِل ٦٠ ثانية ثم يفشل بـ"Session start failed. Error code 2473".
+  // أُثبِت على الشيلد ٢٠٢٦-٠٩-٠٦ عبر DevTools: systemState عالق على "starting" واستثناء غير
+  // ملتقط من cast_receiver_framework.js. الأعراض كانت مضلِّلة لأن الصفحة تُرسم بالكامل (HTML
+  // ثابت) والساعة تتحدّث وأيقونة التشغيل تظهر - كلها تسبق السطر الذي يرمي بالضبط
+  ctx.start();
+
   setInterval(renderClock, 10000);
   setInterval(renderProgress, 500);
   renderClock();
   renderTransport();
-  ctx.start();
 }
