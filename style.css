@@ -4,6 +4,9 @@
     --dim:rgba(255,255,255,.62); --ghost:rgba(255,255,255,.14);
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  /* 🔑 بدون !important يخسر [hidden] أمام .row{display:flex} أدناه رغم تساوي الخصوصية،
+     لأن هذه القاعدة تُقرأ بعده في نفس الملف - فيبقى الصف ظاهرًا رغم الخاصية hidden=true */
+  [hidden]{display:none!important}
   html,body{height:100%}
   body{
     font-family:"Noto Kufi Arabic",system-ui,sans-serif; color:var(--white);

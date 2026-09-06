@@ -33,11 +33,13 @@ function ayahAt(timings, positionMs) {
   return found === null ? timings[0].ayah : found;
 }
 
-/** 🔑 الإدخال ayah=0 هو البسملة ولا يقابله رقم آية معروض - نُسقطه كما يفعل الهاتف */
+/** 🔑 الإدخال ayah=0 هو البسملة ولا يقابله رقم آية معروض - نُسقطه كما يفعل الهاتف.
+ *  🔑 start_time غير محدود (NaN مثلًا) يكسر ayahAt: الحلقة تتوقف عند "else break" مبكرًا
+ *  فيتجمّد رقم الآية بدل أن يتدهور بهدوء - نُسقط هذه الإدخالات كإدخال البسملة تمامًا */
 function parseTimings(json) {
   if (!Array.isArray(json)) return [];
   return json
-    .filter(o => Number(o.ayah) > 0)
+    .filter(o => Number(o.ayah) > 0 && Number.isFinite(Number(o.start_time)))
     .map(o => ({ ayah: Number(o.ayah), startMs: Number(o.start_time), endMs: Number(o.end_time) }));
 }
 
@@ -56,6 +58,10 @@ if (typeof cast !== "undefined") {
   let timings = [];
   let totalAyahs = 0;
   let loadedContentId = null;
+
+  // 🔑 يطابق إزاحة المزامنة على الهاتف - PhoneHomeScreen.kt: syncOffsetMs = 150L،
+  // تُضاف قبل indexOfLast؛ بدونها يختلف رقم الآية عن الهاتف لحظيًا عند حدود الآيات
+  const AYAH_SYNC_OFFSET_MS = 150;
 
   const fills   = () => document.querySelectorAll('.fill');
   const ayahRow = () => document.querySelectorAll('.row')[1];
@@ -78,8 +84,12 @@ if (typeof cast !== "undefined") {
     // 🔑 composer يحمل رمز اللغة من الهاتف؛ غيابه (نسخة مُرسِل قديمة) يعني عربي كما كان
     lang = String(md.composer || "ar").toLowerCase();
     el('kareem').textContent  = md.albumName || QTV.strings(lang).kareem;
-    el('reciter').textContent = md.artist || "";
-    el('surah').textContent   = md.title || "";
+    // 🔑 بعض مسارات استرجاع الهاتف تبني عنصر الوسائط بـ artist/title فارغين
+    // (PlaybackService.kt: buildMediaItem(surahNumber, moshafServer, "", "", context)) -
+    // كتابتهما بلا شرط تمسح اسم السورة والقارئ الصحيحين المعروضين سلفًا؛ عناصر قائمة
+    // مشغّل الهاتف الفعلي تحمل دائمًا اسمًا حقيقيًا فلا نخسر شيئًا مشروعًا بهذا الشرط
+    if (md.artist) el('reciter').textContent = md.artist;
+    if (md.title)  el('surah').textContent   = md.title;
     document.documentElement.lang = lang;
     renderClock();
   }
@@ -94,7 +104,7 @@ if (typeof cast !== "undefined") {
     // 🔑 صف الآية زينة - يُخفى بهدوء متى تعذّرت التوقيتات، ولا يمس صف الوقت إطلاقًا
     if (!timings.length) { ayahRow().hidden = true; return; }
     ayahRow().hidden = false;
-    const n = QTV.ayahAt(timings, p * 1000);
+    const n = QTV.ayahAt(timings, p * 1000 + AYAH_SYNC_OFFSET_MS);
     el('ayahNow').textContent   = QTV.strings(lang).ayah(QTV.shapeDigits(n, lang));
     el('ayahTotal').textContent = QTV.shapeDigits(totalAyahs, lang);
     fills()[1].style.width = (totalAyahs > 0 ? (n / totalAyahs) * 100 : 0) + "%";
@@ -102,8 +112,12 @@ if (typeof cast !== "undefined") {
 
   /** الأزرار مرآة للحالة فقط - جهاز الاستقبال لا يستقبل تنقّل D-pad إطلاقًا */
   function renderTransport() {
+    // 🔑 BUFFERING يحدث في كل انتقال بين عناصر القائمة - معاملته كإيقاف يجعل القرص
+    // يومض إلى "تشغيل" (مثلث) بينما المستخدم لم يوقف شيئًا
+    const state = playerManager.getPlayerState();
     const playing =
-      playerManager.getPlayerState() === cast.framework.messages.PlayerState.PLAYING;
+      state === cast.framework.messages.PlayerState.PLAYING ||
+      state === cast.framework.messages.PlayerState.BUFFERING;
     el('playIcon').innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
 
     const q = playerManager.getQueueManager();

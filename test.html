@@ -62,6 +62,11 @@ eq(Q.parseTimings([
   {ayah:1, start_time:3000, end_time:7000}
 ]), [{ayah:1, startMs:3000, endMs:7000}], "basmala entry is dropped");
 
+eq(Q.parseTimings([
+  {ayah:1, start_time:"not-a-number", end_time:7000},
+  {ayah:2, start_time:7000,           end_time:12000}
+]), [{ayah:2, startMs:7000, endMs:12000}], "non-finite start_time entry is dropped");
+
 out.textContent += '\n' + pass + ' passed, ' + fail + ' failed\n';
 document.title = fail ? 'FAIL (' + fail + ')' : 'PASS';
 </script>
