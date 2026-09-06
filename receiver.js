@@ -196,6 +196,32 @@ if (typeof cast !== "undefined") {
   // أُثبِت على الشيلد ٢٠٢٦-٠٩-٠٦ عبر DevTools: systemState عالق على "starting" واستثناء غير
   // ملتقط من cast_receiver_framework.js. الأعراض كانت مضلِّلة لأن الصفحة تُرسم بالكامل (HTML
   // ثابت) والساعة تتحدّث وأيقونة التشغيل تظهر - كلها تسبق السطر الذي يرمي بالضبط
+  // 🔑🔑🔑 تغيير السورة من ريموت التلفزيون. معالج مفاتيح الـSDK المدمج يحجز
+  // يمين/يسار للتقديم داخل السورة (سلوك أعجب المستخدم ونُبقيه كما هو تمامًا)، فلا يبقى مفتاح
+  // للانتقال بين السور - وهذا بالضبط ما اشتكى منه: "اقدر اغير الايه لكن اغير السوره مايشتغل".
+  // نربط فوق/تحت بالقائمة. الأزرار الثلاثة أسفل المشغّل مؤشرات حالة فقط (لا لمس بالتلفزيون)،
+  // فهذا هو المدخل الفعلي الوحيد. مرحلة الالتقاط (capture) لنسبق معالج الـSDK.
+  // 🔑 QUEUE_PREV يبقى معطّلًا فعليًا عند أول عنصر: المرسِل يبني القائمة من السورة الحالية
+  // للأمام فقط (أُكِّد حيًّا: ١١٢ عنصر تبدأ بآل عمران عند تشغيلها)، فما قبلها غير موجود أصلًا
+  function queueJump(type) {
+    try {
+      playerManager.sendLocalMediaRequest({ type: type, requestId: 0 });
+    } catch (e) {
+      console.warn("queue jump failed", e);
+    }
+  }
+
+  window.addEventListener("keydown", e => {
+    const M = cast.framework.messages.MessageType;
+    let type = null;
+    if (e.key === "ArrowDown" || e.key === "MediaTrackNext") type = M.QUEUE_NEXT;
+    else if (e.key === "ArrowUp" || e.key === "MediaTrackPrevious") type = M.QUEUE_PREV;
+    if (!type) return;
+    e.preventDefault();
+    e.stopPropagation();
+    queueJump(type);
+  }, true);
+
   ctx.start();
 
   setInterval(renderClock, 10000);
