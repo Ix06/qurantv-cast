@@ -26,6 +26,9 @@
   /* واجهتنا كلها فوق الطبقة المعتمة */
   .top,.stage,.surah,.bottom{position:relative; z-index:2}
 
+  /* 🔑 تدوير ٩٠° باتجاه عقارب الساعة يحوّل سهم "السابق" (يسار) إلى أعلى و"التالي" (يمين)
+     إلى أسفل - نفس مساري الأيقونتين بلا تغيير، فيطابق الشكلُ مفتاحَي الريموت ↑/↓ */
+  .small svg{transform:rotate(90deg)}
   /* وميض ضغطة الريموت على الزر الذي يمثّلها */
   .small.hit{background:var(--mint); color:var(--bg-top); transform:scale(1.12)}
   .small{transition:background .15s ease, transform .15s ease}
