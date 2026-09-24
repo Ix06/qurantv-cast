@@ -19,9 +19,13 @@
      وواجهته الافتراضية مخفية بطبقة .veil فوقه لا بـdisplay:none - إخفاؤه فعليًا قد يمنع
      الـSDK من القياس/الربط، وهذا العنصر بالضبط هو ما فشل غيابُه أول تجربة بث حقيقية */
   cast-media-player{position:fixed; inset:0; z-index:0}
+  /* خلفية المسجد النبوي نفسها التي يفتح عليها التطبيق، معتّمة حتى يُقرأ النص فوقها */
   .veil{
     position:fixed; inset:0; z-index:1;
-    background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-bottom) 100%);
+    background:
+      linear-gradient(180deg,rgba(10,22,30,.62) 0%,rgba(10,22,30,.50) 40%,rgba(10,22,30,.86) 100%),
+      url("bg.jpg") center/cover no-repeat,
+      linear-gradient(180deg,var(--bg-top) 0%,var(--bg-bottom) 100%);
   }
   /* واجهتنا كلها فوق الطبقة المعتمة */
   .top,.stage,.surah,.bottom{position:relative; z-index:2}
@@ -41,8 +45,16 @@
   .clock .time small{font-size:2.2vh; font-weight:500; margin-inline-start:.5vw}
   .clock .date{font-size:2vh; color:var(--dim); margin-top:.5vh; unicode-bidi:isolate}
 
-  /* الوسط يبقى فارغًا - هو مكان صورة الخلفية لاحقًا */
-  .stage{flex:1}
+  /* الوسط: الآية الحالية. min-height:0 ضروري حتى يتقلّص داخل عمود flex ولا يدفع المشغّل للأسفل */
+  .stage{flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:2vh 8vw}
+  .ayah{
+    font-family:"Lateef",serif; font-size:9.5vh; line-height:1.7; text-align:center;
+    color:var(--white); max-width:100%; max-height:100%;
+    text-shadow:0 .25vh 1.6vh rgba(0,0,0,.65);
+    transition:opacity .45s ease;
+  }
+  .ayah.out{opacity:0}
+  .ayah .mark{color:var(--mint); white-space:nowrap}
   /* اسم السورة: سطر مستقل فوق المشغّل مباشرة، محاذى لليمين، بنفس خط "القرآن الكريم" */
   .surah{
     font-family:"Noto Kufi Arabic",system-ui,sans-serif; font-weight:700;

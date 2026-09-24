@@ -58,6 +58,11 @@ if (typeof cast !== "undefined") {
   let timings = [];
   let totalAyahs = 0;
   let loadedContentId = null;
+  // نص السورة الحالية (مصفوفة آيات) - من quran/NNN.json في هذا المستودع، مولَّد من نفس ملف
+  // التطبيق assets/quran_uthmani_full.json بتصحيحاته، فيطابق ما يعرضه الهاتف حرفيًا
+  let surahText = [];
+  let shownAyah = null;
+  let ayahSwapTimer = null;
 
   // 🔑 يطابق إزاحة المزامنة على الهاتف - PhoneHomeScreen.kt: syncOffsetMs = 150L،
   // تُضاف قبل indexOfLast؛ بدونها يختلف رقم الآية عن الهاتف لحظيًا عند حدود الآيات
@@ -102,12 +107,61 @@ if (typeof cast !== "undefined") {
     fills()[0].style.width = (d > 0 ? (p / d) * 100 : 0) + "%";
 
     // 🔑 صف الآية زينة - يُخفى بهدوء متى تعذّرت التوقيتات، ولا يمس صف الوقت إطلاقًا
-    if (!timings.length) { ayahRow().hidden = true; return; }
+    if (!timings.length) { ayahRow().hidden = true; showAyah(null); return; }
     ayahRow().hidden = false;
     const n = QTV.ayahAt(timings, p * 1000 + AYAH_SYNC_OFFSET_MS);
+    showAyah(n);
     el('ayahNow').textContent   = QTV.strings(lang).ayah(QTV.shapeDigits(n, lang));
     el('ayahTotal').textContent = QTV.shapeDigits(totalAyahs, lang);
     fills()[1].style.width = (totalAyahs > 0 ? (n / totalAyahs) * 100 : 0) + "%";
+  }
+
+  /** يصغّر الخط حتى تتّسع الآية كاملة في الوسط - آيات البقرة الطويلة تحتاج أسطرًا كثيرة */
+  function fitAyah() {
+    const box = el('ayah'), stage = box.parentElement;
+    const cs = getComputedStyle(stage);
+    const room = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    let vh = 9.5;
+    box.style.fontSize = vh + "vh";
+    while (box.scrollHeight > room && vh > 2.6) {
+      vh -= 0.3;
+      box.style.fontSize = vh + "vh";
+    }
+  }
+
+  /** تبديل الآية بتلاشٍ هادئ؛ null يُخفيها (لا توقيتات أو النص لم يصل بعد) */
+  function showAyah(n) {
+    const text = n ? surahText[n - 1] : null;
+    const key = text ? n : null;
+    if (key === shownAyah) return;
+    shownAyah = key;
+    const box = el('ayah');
+    box.classList.add('out');
+    clearTimeout(ayahSwapTimer);
+    ayahSwapTimer = setTimeout(() => {
+      if (!text) { box.textContent = ""; return; }
+      box.textContent = text + " ";
+      const mark = document.createElement('span');
+      mark.className = 'mark';
+      mark.textContent = "﴿" + QTV.shapeDigits(n, "ar") + "﴾";
+      box.appendChild(mark);
+      fitAyah();
+      box.classList.remove('out');
+    }, 280);
+  }
+
+  async function loadText(surah, targetId) {
+    surahText = []; shownAyah = null;
+    if (!surah) return;
+    try {
+      const res = await fetch("quran/" + String(surah).padStart(3, "0") + ".json");
+      const arr = await res.json();
+      // 🔑 نفس حارس التوقيتات: رد متأخر لسورة تجاوزتها القائمة يُسقَط
+      if (loadedContentId !== targetId || !Array.isArray(arr)) return;
+      surahText = arr;
+    } catch (e) {
+      console.warn("surah text unavailable", e);
+    }
   }
 
   /** الأزرار مرآة للحالة فقط - جهاز الاستقبال لا يستقبل تنقّل D-pad إطلاقًا */
@@ -161,6 +215,7 @@ if (typeof cast !== "undefined") {
       // 🔑 Number(x) || fallback يُعامل صفرًا حقيقيًا كغائب - غير قابل للاستغلال هنا لأن
       // أرقام السور ومعرّفات الروايات في mp3quran لا تكون صفرًا أبدًا؛ افتراض مقصود ومُوزَن
       const surah = Number(md.trackNumber) || surahFromUrl(url);
+      loadText(surah, targetId);
       if (!surah) return; // 🔑 لا داعٍ لجلب قائمة الروايات كاملة إن لم نحدد السورة أصلًا
       const read = Number(md.discNumber) || await readIdForUrl(url);
       if (!read) return;
@@ -231,6 +286,7 @@ if (typeof cast !== "undefined") {
 
   ctx.start();
 
+  window.addEventListener("resize", () => { if (shownAyah) fitAyah(); });
   setInterval(renderClock, 10000);
   setInterval(renderProgress, 500);
   renderClock();
